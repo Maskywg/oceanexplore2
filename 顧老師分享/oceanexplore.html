@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>樂園時代．臺灣山城海｜顧蕙倩博士新書分享會</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #000911;
+            color: white;
+            scroll-behavior: smooth;
+            overflow: hidden; /* 初始鎖定滾動 */
+        }
+
+        h1, h2, h3, .serif { font-family: 'Noto Serif TC', serif; }
+
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+        }
+
+        /* 啟程頁面樣式 */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #001220 0%, #000000 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            transition: transform 0.3s ease, background 0.3s ease;
+            overflow: hidden;
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .island-tag {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #7ee8fa 0%, #eec0c6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-action:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 210, 255, 0.4); }
+        
+        /* 音樂控制按鈕樣式 */
+        #music-control {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .icon-link {
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .icon-link:hover {
+            background: rgba(0, 210, 255, 0.2);
+            color: #7ee8fa;
+            transform: translateY(-2px);
+        }
+
+        /* 放大圖片容器樣式 */
+        .island-img-wrapper {
+            width: 100%;
+            height: 350px; /* 固定高度增加展現空間 */
+            overflow: hidden;
+            background: rgba(255,255,255,0.02);
+            position: relative;
+        }
+        .island-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s ease;
+        }
+        .glass-card:hover .island-img-wrapper img {
+            transform: scale(1.08);
+        }
+
+        .main-intro-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.5;
+            transition: opacity 0.5s ease;
+        }
+
+        /* 進入按鈕動畫 */
+        .pulse-btn {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 210, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 音樂播放器 (隱藏) -->
+    <audio id="bgMusic" loop>
+        <source src="audio/ocean.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 音樂控制懸浮鍵 -->
+    <div id="music-control" onclick="toggleMusic()">
+        <i id="music-icon" class="fas fa-pause text-blue-300"></i>
+    </div>
+
+    <!-- 啟程頁面 Overlay -->
+    <div id="splash-screen">
+        <div class="text-center px-4">
+            <p class="island-tag mb-6 tracking-[0.5em] opacity-80">文學朝聖之旅</p>
+            <h1 class="text-4xl md:text-6xl font-bold mb-8 gradient-text serif tracking-widest">樂園時代</h1>
+            <button onclick="enterExperience()" class="pulse-btn btn-action px-12 py-4 rounded-full font-bold text-white text-xl tracking-widest group">
+                啟程 ‧ 聽見島嶼
+                <i class="fas fa-chevron-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+            </button>
+            <p class="mt-8 text-blue-200/40 text-sm italic serif">建議開啟音量以獲得最佳體驗</p>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <main id="main-content" class="relative z-10 opacity-0 transition-opacity duration-1000">
+        
+        <!-- Hero Section -->
+        <section class="min-h-screen flex flex-col items-center justify-center px-4 text-center">
+            <div class="max-w-4xl mx-auto">
+                <p class="island-tag mb-4 tracking-widest">文學朝聖之旅 系列 4</p>
+                <h1 class="text-4xl md:text-7xl font-bold mb-6 gradient-text serif">樂園時代．臺灣山城海</h1>
+                <p class="text-2xl md:text-3xl text-blue-100 mb-4 serif">顧蕙倩 博士 著</p>
+                <p class="text-lg text-blue-200/80 mb-12 tracking-[0.2em]">全新文字 x 音樂聆聽體驗 ‧ 澎湖褒歌創作分享</p>
+                
+                <div class="flex flex-wrap justify-center gap-4">
+                    <a href="#register" class="btn-action px-8 py-3 rounded-full font-bold text-white">立即報名</a>
+                    <a href="#islands" class="glass-card px-8 py-3 rounded-full font-bold hover:bg-white/10 transition-all">探索南方四島</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Book Introduction -->
+        <section class="py-20 px-4">
+            <div class="max-w-5xl mx-auto glass-card p-8 md:p-12">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold mb-6 serif border-l-4 border-blue-400 pl-4">關於本書</h2>
+                        <p class="text-blue-100/80 leading-relaxed mb-6">
+                            《樂園時代》不僅是一本書，更是一場感官的遠征。顧蕙倩博士透過細膩的文字，帶領讀者走入臺灣的山、城、海。本次分享會特別聚焦澎湖「南方四島」，結合褒歌創作與譜曲合作，讓您現場感受文字轉化為旋律的魔力。
+                        </p>
+                        <ul class="space-y-3 text-blue-200/70">
+                            <li><i class="fas fa-music mr-2"></i> 聽顧顧分享澎湖褒歌</li>
+                            <li><i class="fas fa-feather-alt mr-2"></i> 文學創作與譜曲的心路歷程</li>
+                            <li><i class="fas fa-book-open mr-2"></i> 商鼎數位出版 精心呈現</li>
+                        </ul>
+                    </div>
+                    <div class="relative">
+                        <div class="w-full h-80 bg-blue-900/30 rounded-2xl flex items-center justify-center border border-white/10 overflow-hidden relative group">
+                            <img src="images/main.png" alt="樂園時代" class="main-intro-img absolute inset-0" onerror="this.src='https://placehold.co/600x800/001220/7ee8fa?text=樂園時代';">
+                            <div class="text-center p-8 relative z-10">
+                                <i class="fas fa-quote-left text-blue-300/40 text-4xl mb-4 block"></i>
+                                <span class="text-blue-100 italic text-xl drop-shadow-md">「聽見，島嶼的聲音」</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Four Islands Exploration (預留大圖片且僅保留大標題) -->
+        <section id="islands" class="py-20 px-4">
+            <h2 class="text-3xl md:text-5xl font-bold text-center mb-16 serif">南方四島：啟程與之路</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+                <!-- 東吉嶼 -->
+                <div class="glass-card">
+                    <div class="island-img-wrapper">
+                        <img src="images/1.png" alt="東吉嶼" onerror="this.src='https://placehold.co/800x600/001220/7ee8fa?text=東吉嶼';">
+                    </div>
+                    <div class="p-8">
+                        <p class="text-yellow-400 text-sm tracking-widest mb-2 uppercase">啟明之路 ‧ 〈繁露〉</p>
+                        <h3 class="text-3xl font-bold serif gradient-text">東吉嶼</h3>
+                    </div>
+                </div>
+
+                <!-- 西吉嶼 -->
+                <div class="glass-card">
+                    <div class="island-img-wrapper">
+                        <img src="images/2.png" alt="西吉嶼" onerror="this.src='https://placehold.co/800x600/001220/7ee8fa?text=西吉嶼';">
+                    </div>
+                    <div class="p-8">
+                        <p class="text-blue-400 text-sm tracking-widest mb-2 uppercase">寂靜之路 ‧ 〈雨露〉</p>
+                        <h3 class="text-3xl font-bold serif gradient-text">西吉嶼</h3>
+                    </div>
+                </div>
+
+                <!-- 東嶼坪 -->
+                <div class="glass-card">
+                    <div class="island-img-wrapper">
+                        <img src="images/3.png" alt="東嶼坪" onerror="this.src='https://placehold.co/800x600/001220/7ee8fa?text=東嶼坪';">
+                    </div>
+                    <div class="p-8">
+                        <p class="text-green-400 text-sm tracking-widest mb-2 uppercase">手作之路 ‧ 〈朝露〉</p>
+                        <h3 class="text-3xl font-bold serif gradient-text">東嶼坪</h3>
+                    </div>
+                </div>
+
+                <!-- 西嶼坪 -->
+                <div class="glass-card">
+                    <div class="island-img-wrapper">
+                        <img src="images/4.png" alt="西嶼坪" onerror="this.src='https://placehold.co/800x600/001220/7ee8fa?text=西嶼坪';">
+                    </div>
+                    <div class="p-8">
+                        <p class="text-red-400 text-sm tracking-widest mb-2 uppercase">多漢之路 ‧ 〈夕露〉</p>
+                        <h3 class="text-3xl font-bold serif gradient-text">西嶼坪</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Share Meeting Events -->
+        <section id="register" class="py-20 px-4 bg-white/5">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl font-bold text-center mb-12 serif">2026 新書分享會</h2>
+                
+                <div class="max-w-2xl mx-auto">
+                    <!-- 台北 ‧ 海洋之約 -->
+                    <div class="glass-card p-8 md:p-12 border-2 border-blue-400 shadow-[0_0_20px_rgba(0,210,255,0.2)]">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 class="text-2xl font-bold text-blue-300 mb-2">台北 ‧ 海洋之約</h3>
+                                <p class="text-blue-200/60">文字 x 音樂 x 咖啡的深度對話</p>
+                            </div>
+                            <span class="bg-blue-400 px-4 py-1 rounded text-sm font-bold text-slate-900">歡迎報名</span>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mb-10">
+                            <div class="space-y-4 text-lg">
+                                <p><i class="far fa-calendar-alt mr-3 text-blue-400"></i>2026.01.28 (Wed)</p>
+                                <p><i class="far fa-clock mr-3 text-blue-400"></i>18:00 PM</p>
+                                <div class="flex items-center flex-wrap gap-y-2">
+                                    <i class="fas fa-map-marker-alt mr-3 text-blue-400"></i>
+                                    <span>欒樹下咖啡</span>
+                                    <div class="ml-3 flex space-x-2">
+                                        <a href="https://maps.app.goo.gl/FqPvHFGVJAsZxrk6A" target="_blank" class="icon-link" title="開啟導航">
+                                            <i class="fas fa-location-arrow text-xs"></i>
+                                        </a>
+                                        <a href="https://www.facebook.com/editorsbookscafe" target="_blank" class="icon-link" title="Facebook 粉絲專頁">
+                                            <i class="fab fa-facebook-f text-xs"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-center border-l border-white/10 pl-6 hidden md:flex">
+                                <p class="text-blue-100/70 text-sm leading-relaxed">
+                                    現場將分享新書精華，<br>及澎湖褒歌與音樂創作過程，<br>並備有手沖咖啡與茶點。
+                                </p>
+                            </div>
+                        </div>
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfSgFkNAB4jH72d41d9uPf5_r2yn1cWTvgZNP-6Wec9hiiMDg/viewform" target="_blank" class="block w-full text-center py-4 rounded-xl btn-action font-bold text-white text-xl">立即預約 欒樹下場次</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-12 px-4 border-t border-white/10">
+            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+                <div class="text-center md:text-left">
+                    <p class="text-xl font-bold gradient-text serif mb-2">樂園時代．臺灣山城海</p>
+                    <p class="text-blue-200/40 text-sm">商鼎數位出版 ‧ 文學朝聖之旅系列</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="https://www.facebook.com/editorsbookscafe" target="_blank" class="text-2xl hover:text-blue-400 transition-colors"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://maps.app.goo.gl/FqPvHFGVJAsZxrk6A" target="_blank" class="text-2xl hover:text-blue-400 transition-colors"><i class="fas fa-map-marked-alt"></i></a>
+                </div>
+            </div>
+            <div class="text-center mt-10 text-xs text-blue-200/20">
+                © 2026 顧蕙倩博士《樂園時代》分享會 ‧ 欒樹下咖啡
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        // --- 音樂播放邏輯 ---
+        const audio = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('music-control');
+        const musicIcon = document.getElementById('music-icon');
+
+        function toggleMusic() {
+            if (audio.paused) {
+                audio.play();
+                musicIcon.className = 'fas fa-pause text-blue-300';
+            } else {
+                audio.pause();
+                musicIcon.className = 'fas fa-play text-blue-300';
+            }
+        }
+
+        // --- 進入網頁邏輯 ---
+        function enterExperience() {
+            audio.play().catch(e => console.log("Audio play blocked: ", e));
+            const splash = document.getElementById('splash-screen');
+            splash.style.opacity = '0';
+            splash.style.pointerEvents = 'none';
+            const main = document.getElementById('main-content');
+            main.style.opacity = '1';
+            musicBtn.style.opacity = '1';
+            musicBtn.style.visibility = 'visible';
+            document.body.style.overflow = 'auto';
+            init3D();
+        }
+
+        // --- 3D Ocean Background (Three.js) ---
+        let scene, camera, renderer, particles, plane, pointLight;
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+        const container = document.getElementById('canvas-container');
+
+        function init3D() {
+            if (scene) return;
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000911, 0.015);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 40;
+            camera.position.y = 5;
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+            const geometry = new THREE.PlaneGeometry(200, 200, 80, 80);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x002a4d, specular: 0x00d2ff, shininess: 120, transparent: true, opacity: 0.8, flatShading: false
+            });
+            plane = new THREE.Mesh(geometry, material);
+            plane.rotation.x = -Math.PI / 2.5;
+            plane.position.y = -15;
+            scene.add(plane);
+            scene.add(new THREE.AmbientLight(0x001529, 3));
+            pointLight = new THREE.PointLight(0x00d2ff, 4, 150);
+            pointLight.position.set(20, 30, 20);
+            scene.add(pointLight);
+            const pGeometry = new THREE.BufferGeometry();
+            const pCount = 800;
+            const pPositions = new Float32Array(pCount * 3);
+            for(let i=0; i<pCount; i++) {
+                pPositions[i*3] = (Math.random() - 0.5) * 200;
+                pPositions[i*3+1] = (Math.random() - 0.5) * 100;
+                pPositions[i*3+2] = (Math.random() - 0.5) * 200;
+            }
+            pGeometry.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+            particles = new THREE.Points(pGeometry, new THREE.PointsMaterial({ 
+                color: 0x7ee8fa, size: 0.15, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending
+            }));
+            scene.add(particles);
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX - window.innerWidth / 2) / 100;
+                mouseY = (e.clientY - window.innerHeight / 2) / 100;
+            });
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.0006;
+            const pos = plane.geometry.attributes.position.array;
+            for (let i = 0; i < pos.length; i += 3) {
+                const x = pos[i]; const y = pos[i+1];
+                pos[i + 2] = Math.sin(x * 0.15 + time * 1.2) * 2.0 + Math.cos(y * 0.2 + time * 0.8) * 1.2;
+            }
+            plane.geometry.attributes.position.needsUpdate = true;
+            targetX += (mouseX - targetX) * 0.05;
+            targetY += (mouseY - targetY) * 0.05;
+            camera.rotation.y = -targetX * 0.1;
+            camera.rotation.x = -targetY * 0.1;
+            particles.rotation.y += 0.0003;
+            pointLight.position.x = Math.sin(time) * 30;
+            pointLight.intensity = 3 + Math.sin(time * 2) * 1;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            if (!renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
